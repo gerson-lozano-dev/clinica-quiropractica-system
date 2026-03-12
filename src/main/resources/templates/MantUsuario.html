@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Usuarios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <style>
+        .navbar-nav .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #ffffff !important;
+            font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.1); 
+        }
+        .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" th:href="@{/index}"><i class="fa-solid fa-user-doctor"></i> SIS-QUIRO</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-pacientes" th:href="@{/gestionpaciente/listar}"><i class="fa-solid fa-hospital-user"></i> Pacientes</a>
+                    </li>
+                    
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-tratamientos" th:href="@{/gestiontratamiento/listar}"><i class="fa-solid fa-stethoscope"></i> Tratamientos</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" id="nav-asistencia" th:href="@{/gestionatencion/listar}"><i class="fa-solid fa-clipboard-check"></i> Asistencia</a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="nav-citas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-calendar-days"></i> Citas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/nueva}">Nueva Cita</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/listar}">Listar Citas</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo == 'ADMIN'}">
+                        <a class="nav-link" id="nav-usuarios" th:href="@{/gestionusuario/listar}"><i class="fa-solid fa-users-gear"></i> Usuarios</a>
+                    </li>
+
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-reportes" th:href="@{/gestionreporte}"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                    </li>
+
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link dropdown-toggle fw-bold text-warning" id="nav-ventas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-cart-shopping"></i> Ventas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestionventa/nueva}">Nueva Venta</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestionreporte(vista='historial')}">Historial Ventas</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <div class="text-white">
+                    <span class="me-3" th:if="${session.usuarioLogueado != null}">
+                        <i class="fa-solid fa-circle-user"></i> 
+                        <span th:text="${session.usuarioLogueado.nombres} + ' (' + ${session.usuarioLogueado.cargo} + ')'">Usuario</span>
+                    </span>
+                    <a href="javascript:void(0)" class="btn btn-sm btn-danger" onclick="confirmarSalida()">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h2 class="text-primary mb-4"><i class="fa-solid fa-users-gear"></i> Gestión de Usuarios y Médicos</h2>
+        
+        <div th:if="${mensaje != null}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-check-circle"></i> <span th:text="${mensaje}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${error != null}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <button class="btn btn-success mb-3" onclick="abrirModalRegistrar()">
+            <i class="fa-solid fa-user-plus"></i> Nuevo Usuario
+        </button>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <table id="tablaUsuarios" class="table table-striped table-hover" style="width:100%">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th><th>Nombres y Apellidos</th><th>Email (Usuario)</th><th>Cargo</th><th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${listaUsuarios}">
+                            <td th:text="${u.idUsuario}">1</td>
+                            <td th:text="${u.nombres} + ' ' + ${u.apellidos}">Juan Perez</td>
+                            <td th:text="${u.email}">juan@mail.com</td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${u.cargo == 'ADMIN' ? 'bg-danger' : (u.cargo == 'MEDICO' ? 'bg-success' : 'bg-info')}"
+                                      th:text="${u.cargo}">CARGO</span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-primary btn-sm" onclick="cargarDatos(this)"
+                                    th:data-id="${u.idUsuario}" th:data-nom="${u.nombres}" th:data-ape="${u.apellidos}"
+                                    th:data-email="${u.email}" th:data-clave="${u.clave}" th:data-cargo="${u.cargo}">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm" th:onclick="'confirmarEliminacion(' + ${u.idUsuario} + ')'">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalUsuario" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="tituloModal">Nuevo Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/gestionusuario/guardar}" method="post" id="formUsuario">
+                    <div class="modal-body">
+                        <input type="hidden" name="idUsuario" id="id_usuario" value="0">
+                        <div class="row">
+                            <div class="col-6 mb-3"><label class="form-label">Nombres</label><input type="text" name="nombres" id="nombres" class="form-control" required></div>
+                            <div class="col-6 mb-3"><label class="form-label">Apellidos</label><input type="text" name="apellidos" id="apellidos" class="form-control" required></div>
+                        </div>
+                        <div class="mb-3"><label class="form-label">Correo (Login)</label><input type="email" name="email" id="email" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label">Contraseña</label><input type="password" name="clave" id="clave" class="form-control" required></div>
+                        <div class="mb-3">
+                            <label class="form-label">Cargo / Rol</label>
+                            <select name="cargo" id="cargo" class="form-select">
+                                <option value="ASISTENTE">Asistente</option><option value="MEDICO">Médico</option><option value="ADMIN">Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            $('#tablaUsuarios').DataTable({
+                "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json" }
+            });
+        });
+
+        // SE AGREGA LA FUNCIÓN DE CONFIRMACIÓN DE SALIDA
+        function confirmarSalida() {
+            Swal.fire({
+                title: '¿Deseas salir del sistema?',
+                text: "Se cerrará tu sesión actual.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, salir',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = /*[[@{/logout}]]*/ '/logout';
+                }
+            });
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
+
+        function abrirModalRegistrar() {
+            document.getElementById('tituloModal').innerText = "Nuevo Usuario";
+            document.getElementById('formUsuario').reset();
+            document.getElementById('id_usuario').value = "0";
+            modal.show();
+        }
+
+        function cargarDatos(btn) {
+            document.getElementById('tituloModal').innerText = "Editar Usuario";
+            document.getElementById('id_usuario').value = btn.getAttribute('data-id');
+            document.getElementById('nombres').value = btn.getAttribute('data-nom');
+            document.getElementById('apellidos').value = btn.getAttribute('data-ape');
+            document.getElementById('email').value = btn.getAttribute('data-email');
+            document.getElementById('clave').value = btn.getAttribute('data-clave');
+            document.getElementById('cargo').value = btn.getAttribute('data-cargo');
+            modal.show();
+        }
+
+        function confirmarEliminacion(id) {
+            Swal.fire({
+                title: '¿Eliminar usuario?',
+                text: "No podrá acceder al sistema.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "/gestionusuario/eliminar/" + id;
+                }
+            })
+        }
+    </script>
+</body>
+</html>

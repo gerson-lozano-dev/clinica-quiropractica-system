@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - SIS QUIRO</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body { background-color: #f8f9fa; }
+        .card-kpi { border: none; border-radius: 15px; transition: transform 0.3s; color: white; cursor: pointer; position: relative; overflow: hidden; }
+        .card-kpi:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .icon-bg { font-size: 4rem; opacity: 0.2; position: absolute; right: 15px; bottom: 10px; }
+        .section-title { border-bottom: 2px solid #dee2e6; padding-bottom: 10px; margin-bottom: 20px; color: #495057; }
+        .navbar-nav .nav-link:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; color: #ffffff; }
+        .navbar-nav .nav-link.active { background-color: rgba(255, 255, 255, 0.2); border-radius: 5px; color: #ffffff !important; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" th:href="@{/index}"><i class="fa-solid fa-user-doctor"></i> SIS-QUIRO</a>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-pacientes" th:href="@{/gestionpaciente/listar}"><i class="fa-solid fa-hospital-user"></i> Pacientes</a>
+                    </li>
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-tratamientos" th:href="@{/gestiontratamiento/listar}"><i class="fa-solid fa-stethoscope"></i> Tratamientos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-asistencia" th:href="@{/gestionatencion/listar}"><i class="fa-solid fa-clipboard-check"></i> Asistencia</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="nav-citas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-calendar-days"></i> Citas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/nueva}">Nueva Cita</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/listar}">Listar Citas</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo == 'ADMIN'}">
+                        <a class="nav-link" id="nav-usuarios" th:href="@{/gestionusuario/listar}"><i class="fa-solid fa-users-gear"></i> Usuarios</a>
+                    </li>
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-reportes" th:href="@{/gestionreporte}"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                    </li>
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link dropdown-toggle fw-bold text-warning" id="nav-ventas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-cart-shopping"></i> Ventas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestionventa/nueva}">Nueva Venta</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestionreporte(vista='historial')}">Historial Ventas</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <div class="text-white">
+                    <span class="me-3" th:if="${session.usuarioLogueado != null}">
+                        <i class="fa-solid fa-circle-user"></i> 
+                        <span th:text="${session.usuarioLogueado.nombres} + ' (' + ${session.usuarioLogueado.cargo} + ')'">Usuario</span>
+                    </span>
+                    <a href="javascript:void(0)" class="btn btn-sm btn-danger" onclick="confirmarSalida()"><i class="fa-solid fa-right-from-bracket"></i> Salir</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="text-primary fw-bold">Panel de Control</h3>
+                <p class="text-muted" th:if="${session.usuarioLogueado != null}">
+                    Bienvenido, <strong th:text="${session.usuarioLogueado.nombres} + ' (' + ${session.usuarioLogueado.cargo} + ')'">Usuario</strong>.
+                </p>
+            </div>
+        </div>
+
+        <h5 class="section-title"><i class="fa-solid fa-clipboard-list"></i> Operaciones Diarias</h5>
+        <div class="row g-4 mb-5">
+            <div class="col-md-3"> 
+                <div class="card card-kpi bg-info text-white h-100 p-3" th:onclick="|window.location.href='@{/gestioncita/nueva}'|">
+                    <div class="card-body">
+                        <h5>Recepción</h5>
+                        <h3 class="fw-bold">Nueva Cita</h3>
+                        <p class="small mb-0">Agendar Valoración</p>
+                        <i class="fa-solid fa-calendar-plus icon-bg"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3"> 
+                <div class="card card-kpi bg-success h-100 p-3" th:onclick="|window.location.href='@{/gestionatencion/listar}'|">
+                    <div class="card-body">
+                        <h5>Consultorio</h5>
+                        <h3 class="fw-bold">Atención</h3>
+                        <p class="small mb-0">Lista de Espera</p>
+                        <i class="fa-solid fa-user-doctor icon-bg"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                <div class="card card-kpi bg-danger h-100 p-3" th:onclick="|window.location.href='@{/gestionventa/nueva}'|">
+                    <div class="card-body">
+                        <h5>Caja</h5>
+                        <h3 class="fw-bold">Cobrar</h3>
+                        <p class="small mb-0">Venta de Tratamientos</p>
+                        <i class="fa-solid fa-cash-register icon-bg"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}"> 
+                <div class="card card-kpi bg-primary h-100 p-3" th:onclick="|window.location.href='@{/gestionpaciente/listar}'|">
+                    <div class="card-body">
+                        <h5>Directorio</h5>
+                        <h3 class="fw-bold">Pacientes</h3>
+                        <p class="small mb-0">Historias Clínicas</p>
+                        <i class="fa-solid fa-users icon-bg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+            <h5 class="section-title"><i class="fa-solid fa-cogs"></i> Administración</h5>
+            <div class="row g-4">
+                <div class="col-md-3"> 
+                    <div class="card card-kpi bg-secondary h-100 p-3" th:onclick="|window.location.href='@{/gestionreporte(vista='historial')}'|">
+                        <div class="card-body">
+                            <h5>Finanzas</h5>
+                            <h3 class="fw-bold">Historial</h3>
+                            <p class="small mb-0">Ver transacciones</p>
+                            <i class="fa-solid fa-file-invoice-dollar icon-bg"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3"> 
+                    <div class="card card-kpi bg-warning text-dark h-100 p-3" th:onclick="|window.location.href='@{/gestiontratamiento/listar}'|">
+                        <div class="card-body">
+                            <h5>Catálogo</h5>
+                            <h3 class="fw-bold">Servicios</h3>
+                            <p class="small mb-0">Precios y Detalles</p>
+                            <i class="fa-solid fa-notes-medical icon-bg"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3"> 
+                    <div class="card card-kpi bg-dark text-white h-100 p-3" th:onclick="|window.location.href='@{/gestionreporte}'|">
+                        <div class="card-body">
+                            <h5>Gerencia</h5>
+                            <h3 class="fw-bold">Reportes</h3>
+                            <p class="small mb-0">Gráficos Estadísticos</p>
+                            <i class="fa-solid fa-chart-pie icon-bg"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3" th:if="${session.usuarioLogueado.cargo == 'ADMIN'}"> 
+                    <div class="card card-kpi h-100 p-3" style="background-color: #6610f2;" th:onclick="|window.location.href='@{/gestionusuario/listar}'|">
+                        <div class="card-body">
+                            <h5>Sistema</h5>
+                            <h3 class="fw-bold">Usuarios</h3>
+                            <p class="small mb-0">Gestión de Personal</p>
+                            <i class="fa-solid fa-users-gear icon-bg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:inline="javascript">
+        function confirmarSalida() {
+            Swal.fire({
+                title: '¿Deseas salir?', icon: 'question', showCancelButton: true,
+                confirmButtonColor: '#d33', cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, salir', cancelButtonText: 'Cancelar'
+            }).then((result) => { if (result.isConfirmed) window.location.href = '/logout'; });
+        }
+    </script>
+</body>
+</html>

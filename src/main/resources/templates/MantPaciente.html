@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Pacientes - SIS-QUIRO</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+
+    <style>
+        body { background: #F4F6F9; }
+        .titulo-main { color: #d63384; font-weight: bold; }
+        .btn-custom { background: #d63384; color: white; border-radius: 20px; }
+        .btn-custom:hover { background: #a61e61; color: white; }
+        .modal-header-custom { background: #d63384; color: white; }
+        .seccion-titulo { 
+            border-bottom: 2px solid #ddd; 
+            margin-bottom: 15px; 
+            padding-bottom: 5px; 
+            color: #555; 
+            font-weight: bold;
+        }
+        .navbar-nav .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #ffffff !important;
+            font-weight: bold;
+        }
+        .error-input { border: 1px solid #dc3545 !important; }
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" th:href="@{/index}"><i class="fa-solid fa-user-doctor"></i> SIS-QUIRO</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-pacientes" th:href="@{/gestionpaciente/listar}"><i class="fa-solid fa-hospital-user"></i> Pacientes</a>
+                    </li>
+                    
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-tratamientos" th:href="@{/gestiontratamiento/listar}"><i class="fa-solid fa-stethoscope"></i> Tratamientos</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" id="nav-asistencia" th:href="@{/gestionatencion/listar}"><i class="fa-solid fa-clipboard-check"></i> Asistencia</a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="nav-citas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-calendar-days"></i> Citas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/nueva}">Nueva Cita</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/listar}">Listar Citas</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo == 'ADMIN'}">
+                        <a class="nav-link" id="nav-usuarios" th:href="@{/gestionusuario/listar}"><i class="fa-solid fa-users-gear"></i> Usuarios</a>
+                    </li>
+
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-reportes" th:href="@{/gestionreporte}"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                    </li>
+
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link dropdown-toggle fw-bold text-warning" id="nav-ventas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-cart-shopping"></i> Ventas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestionventa/nueva}">Nueva Venta</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestionreporte(vista='historial')}">Historial Ventas</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <div class="text-white">
+                    <span class="me-3" th:if="${session.usuarioLogueado != null}">
+                        <i class="fa-solid fa-circle-user"></i> 
+                        <span th:text="${session.usuarioLogueado.nombres} + ' (' + ${session.usuarioLogueado.cargo} + ')'">Usuario</span>
+                    </span>
+                    <a href="javascript:void(0)" class="btn btn-sm btn-danger" onclick="confirmarSalida()">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container-fluid mt-4 px-4"> 
+        <h2 class="text-center titulo-main mb-4"><i class="fa-solid fa-hospital-user"></i> Gestión de Pacientes</h2>
+
+        <div class="text-end mb-3">
+            <button class="btn btn-warning text-dark fw-bold shadow-sm" onclick="abrirModalRegistrar()">
+                <i class="fa-solid fa-plus"></i> Nuevo Paciente
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table id="tablaPacientes" class="table table-striped table-bordered shadow-sm bg-white">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>DNI</th><th>Paciente</th><th>Teléfono</th><th>Distrito</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="p : ${listaPacientes}">
+                        <td class="text-center fw-bold" th:text="${p.dni}"></td>
+                        <td th:text="${p.apellidos} + ', ' + ${p.nombres}"></td>
+                        <td th:text="${p.telefono}"></td>
+                        <td th:text="${p.distrito != null ? p.distrito.nombreDistrito : 'Sin Distrito'}"></td>
+                        <td class="text-center">
+                            <button class="btn btn-primary btn-sm" 
+                                th:onclick="cargarDatosEnModal(
+                                    [[${p.dni}]], [[${p.nombres}]], [[${p.apellidos}]], 
+                                    [[${p.fechaNac}]], [[${p.sexo}]], [[${p.estado_civil}]], 
+                                    [[${p.ocupacion}]], [[${p.num_hijos}]], [[${p.telefono}]], 
+                                    [[${p.email}]], [[${p.direccion}]], [[${p.cod_distrito}]],
+                                    [[${p.historiaClinica != null ? p.historiaClinica.motivoConsulta : ''}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.zonasDolor : ''}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.antecedenteTrauma : ''}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.antecedenteCirugia : ''}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.escalaDolorInicial : 5}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.tieneAsma : false}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.tieneDiabetes : false}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.tieneAlergias : false}]], 
+                                    [[${p.historiaClinica != null ? p.historiaClinica.observaciones : ''}]]
+                                )">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <a th:href="@{/gestionpaciente/eliminar/{id}(id=${p.dni})}" 
+                               onclick="return confirm('¿Seguro de eliminar al paciente?')" 
+                               class="btn btn-danger btn-sm ms-2"><i class="fa-solid fa-trash"></i></a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalPaciente" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <form th:action="@{/gestionpaciente/guardar}" method="post" id="formPaciente">
+                    <div class="modal-header modal-header-custom">
+                        <h5 class="modal-title" id="tituloModal">Registrar Paciente</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 border-end">
+                                <h6 class="seccion-titulo"><i class="fa-solid fa-id-card"></i> Datos Personales</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-4"><label class="form-label">DNI</label><input type="text" class="form-control" name="dni" id="dni" maxlength="8" required></div>
+                                    <div class="col-md-8"><label class="form-label">Nombres</label><input type="text" class="form-control" name="nombres" id="nombres" required></div>
+                                    <div class="col-md-12"><label class="form-label">Apellidos</label><input type="text" class="form-control" name="apellidos" id="apellidos" required></div>
+                                    <div class="col-md-6"><label class="form-label">Fec. Nacimiento</label><input type="date" class="form-control" name="fecha_nac" id="fechaNac" required></div>
+                                    <div class="col-md-3"><label class="form-label">Sexo</label><select class="form-select" name="sexo" id="sexo"><option value="M">M</option><option value="F">F</option></select></div>
+                                    <div class="col-md-3"><label class="form-label">Est. Civil</label><select class="form-select" name="estado_civil" id="estadoCivil"><option value="S">S</option><option value="C">C</option><option value="V">V</option><option value="D">D</option></select></div>
+                                    <div class="col-md-6"><label class="form-label">Ocupación</label><input type="text" class="form-control" name="ocupacion" id="ocupacion"></div>
+                                    <div class="col-md-6"><label class="form-label">Num. Hijos</label><input type="number" class="form-control" name="num_hijos" id="numHijos" value="0"></div>
+                                    <div class="col-md-6"><label class="form-label">Teléfono</label><input type="text" class="form-control" name="telefono" id="telefono"></div>
+                                    <div class="col-md-6"><label class="form-label">Email</label><input type="email" class="form-control" name="email" id="email"></div>
+                                    <div class="col-md-8"><label class="form-label">Dirección</label><input type="text" class="form-control" name="direccion" id="direccion"></div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Distrito</label>
+                                        <select class="form-select" name="cod_distrito" id="codDistrito">
+                                            <option th:each="d : ${listaDistritos}" th:value="${d.codDistrito}" th:text="${d.nombreDistrito}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="seccion-titulo"><i class="fa-solid fa-file-medical"></i> Historia Clínica Inicial</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-12"><label class="form-label">Motivo de Consulta</label><textarea class="form-control" name="motivo" id="motivo" rows="2" required></textarea></div>
+                                    <div class="col-md-12"><label class="form-label">Zonas de Dolor</label><input type="text" class="form-control" name="zonas" id="zonas"></div>
+                                    <div class="col-md-6"><label class="form-label">Ant. Trauma</label><input type="text" class="form-control" name="trauma" id="trauma"></div>
+                                    <div class="col-md-6"><label class="form-label">Ant. Cirugía</label><input type="text" class="form-control" name="cirugia" id="cirugia"></div>
+                                    <div class="col-md-4"><label class="form-label">Escala Dolor (1-10)</label><input type="number" class="form-control" name="escala" id="escala" min="1" max="10" value="5"></div>
+                                    <div class="col-md-8 d-flex align-items-end justify-content-around pb-2">
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" name="asma" id="asma" value="true"><label class="form-check-label">Asma</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" name="diabetes" id="diabetes" value="true"><label class="form-check-label">Diabetes</label></div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" name="alergias" id="alergias" value="true"><label class="form-check-label">Alergias</label></div>
+                                    </div>
+                                    <div class="col-md-12"><label class="form-label">Observaciones</label><textarea class="form-control" name="observaciones" id="observaciones" rows="3"></textarea></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-custom px-4">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script th:inline="javascript">
+        $(document).ready(function(){
+            $('#tablaPacientes').DataTable({
+                "language": { "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" }
+            });
+
+            // ALERTAS AUTOMÁTICAS
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('mensaje')) {
+                Swal.fire({ icon: 'success', title: '¡Éxito!', text: urlParams.get('mensaje'), confirmButtonColor: '#d63384' });
+            }
+            if (urlParams.has('editExito')) {
+                Swal.fire({ icon: 'success', title: '¡Actualizado!', text: 'Datos guardados correctamente.', confirmButtonColor: '#0d6efd' });
+            }
+            if (urlParams.has('error') || urlParams.has('editError')) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo completar la operación.', confirmButtonColor: '#d33' });
+            }
+
+            // VALIDACIONES JQUERY
+            $("#formPaciente").on("submit", function(e) {
+                const dni = $("#dni").val();
+                const telf = $("#telefono").val();
+                
+                if (dni.length !== 8 || isNaN(dni)) {
+                    Swal.fire('Validación', 'El DNI debe tener exactamente 8 números.', 'warning');
+                    $("#dni").addClass("error-input");
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (telf && isNaN(telf)) {
+                    Swal.fire('Validación', 'El teléfono solo debe contener números.', 'warning');
+                    $("#telefono").addClass("error-input");
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Limpiar clase de error al escribir
+            $("input").on("keyup", function() { $(this).removeClass("error-input"); });
+        });
+
+        const myModal = new bootstrap.Modal(document.getElementById('modalPaciente'));
+
+        function abrirModalRegistrar() {
+            document.getElementById('tituloModal').innerText = "Registrar Nuevo Paciente";
+            document.getElementById('formPaciente').action = '/gestionpaciente/guardar';
+            document.getElementById('formPaciente').reset(); 
+            document.getElementById('dni').readOnly = false; 
+            myModal.show();
+        }
+
+        function cargarDatosEnModal(dni, nom, ape, fec, sex, civ, ocu, hij, tel, ema, dir, dist, mot, zon, antT, antC, esc, asma, diab, aler, obs) {
+            document.getElementById('tituloModal').innerText = "Editar Paciente";
+            document.getElementById('formPaciente').action = '/gestionpaciente/actualizar';
+            document.getElementById('dni').value = dni;
+            document.getElementById('dni').readOnly = true;
+            document.getElementById('nombres').value = nom;
+            document.getElementById('apellidos').value = ape;
+            
+            if (fec) {
+                let dateObj = new Date(fec);
+                // Corrección de desfase de fecha
+                dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+                document.getElementById('fechaNac').value = dateObj.toISOString().split('T')[0];
+            }
+
+            document.getElementById('sexo').value = sex;
+            document.getElementById('estadoCivil').value = civ;
+            document.getElementById('ocupacion').value = ocu;
+            document.getElementById('numHijos').value = hij;
+            document.getElementById('telefono').value = tel;
+            document.getElementById('email').value = ema;
+            document.getElementById('direccion').value = dir;
+            document.getElementById('codDistrito').value = dist;
+            document.getElementById('motivo').value = mot || '';
+            document.getElementById('zonas').value = zon || '';
+            document.getElementById('trauma').value = antT || '';
+            document.getElementById('cirugia').value = antC || '';
+            document.getElementById('escala').value = esc || 5;
+            document.getElementById('asma').checked = (asma === true || asma === 'true');
+            document.getElementById('diabetes').checked = (diab === true || diab === 'true');
+            document.getElementById('alergias').checked = (aler === true || aler === 'true');
+            document.getElementById('observaciones').value = obs || '';
+            myModal.show();
+        }
+
+        function confirmarSalida() {
+            Swal.fire({ title: '¿Cerrar sesión?', icon: 'question', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, salir' })
+            .then((result) => { if (result.isConfirmed) window.location.href = '/logout'; });
+        }
+    </script>
+</body>
+</html>

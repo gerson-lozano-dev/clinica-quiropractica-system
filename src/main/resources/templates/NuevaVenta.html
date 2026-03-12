@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva Venta - Paquete de Citas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    
+    <style>
+        .card-venta { border-left: 5px solid #0d6efd; }
+        .bg-total { background-color: #e9ecef; font-weight: bold; font-size: 1.2rem; color: #198754; }
+        .navbar-nav .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: #ffffff !important; 
+            font-weight: bold; 
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" th:href="@{/index}"><i class="fa-solid fa-user-doctor"></i> SIS-QUIRO</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-pacientes" th:href="@{/gestionpaciente/listar}"><i class="fa-solid fa-hospital-user"></i> Pacientes</a>
+                    </li>
+                    
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-tratamientos" th:href="@{/gestiontratamiento/listar}"><i class="fa-solid fa-stethoscope"></i> Tratamientos</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" id="nav-asistencia" th:href="@{/gestionatencion/listar}"><i class="fa-solid fa-clipboard-check"></i> Asistencia</a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" id="nav-citas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-calendar-days"></i> Citas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/nueva}">Nueva Cita</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestioncita/listar}">Listar Citas</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo == 'ADMIN'}">
+                        <a class="nav-link" id="nav-usuarios" th:href="@{/gestionusuario/listar}"><i class="fa-solid fa-users-gear"></i> Usuarios</a>
+                    </li>
+
+                    <li class="nav-item" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link" id="nav-reportes" th:href="@{/gestionreporte}"><i class="fa-solid fa-chart-line"></i> Reportes</a>
+                    </li>
+
+                    <li class="nav-item dropdown" th:if="${session.usuarioLogueado.cargo != 'MEDICO'}">
+                        <a class="nav-link dropdown-toggle fw-bold text-warning" id="nav-ventas" href="#" role="button" data-bs-toggle="dropdown"><i class="fa-solid fa-cart-shopping"></i> Ventas</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/gestionventa/nueva}">Nueva Venta</a></li>
+                            <li><a class="dropdown-item" th:href="@{/gestionreporte(vista='historial')}">Historial Ventas</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <div class="text-white">
+                    <span class="me-3" th:if="${session.usuarioLogueado != null}">
+                        <i class="fa-solid fa-circle-user"></i> 
+                        <span th:text="${session.usuarioLogueado.nombres} + ' (' + ${session.usuarioLogueado.cargo} + ')'">Usuario</span>
+                    </span>
+                    <a href="javascript:void(0)" class="btn btn-sm btn-danger" onclick="confirmarSalida()">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                
+                <div th:if="${param.error != null and param.error[0] == '1'}" class="alert alert-danger alert-dismissible fade show">
+                    Error al registrar la venta. Inténtalo de nuevo.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${param.error != null and param.error[0] == '2'}" class="alert alert-danger alert-dismissible fade show">
+                    Error crítico en el servidor.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <div th:if="${param.exito != null and param.exito[0] == '1'}">
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function() {
+                            Swal.fire({
+                                title: '¡Venta Registrada!',
+                                text: 'La venta se guardó correctamente.',
+                                icon: 'success',
+                                confirmButtonColor: '#198754'
+                            });
+                        });
+                    </script>
+                </div>
+
+                <div class="card card-venta shadow">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="m-0 text-primary"><i class="fa-solid fa-cart-shopping"></i> Venta de Paquete / Tratamiento</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        
+                        <form th:action="@{/gestionventa/registrar}" method="post" id="formVenta">
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Paciente:</label>
+                                <select class="form-select select2" name="dniPaciente" required>
+                                    <option value="">-- Buscar Paciente por DNI o Nombre --</option>
+                                    <option th:each="p : ${listaPacientes}" 
+                                            th:value="${p.dni}" 
+                                            th:text="${p.dni + ' - ' + p.apellidos + ' ' + p.nombres}">
+                                    </option>
+                                </select>
+                            </div>
+
+                            <hr>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Tratamiento:</label>
+                                    <select class="form-select" id="comboTratamiento" name="idTratamiento" required onchange="calcularTotal()">
+                                        <option value="" data-precio="0">-- Seleccione --</option>
+                                        <option th:each="t : ${listaTratamientos}" 
+                                                th:value="${t.idTratamiento}" 
+                                                th:data-precio="${t.precio}" 
+                                                th:text="${t.nombre + ' (S/. ' + t.precio + ')'}">
+                                        </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Cantidad de Sesiones:</label>
+                                    <input type="number" name="totalSesiones" id="txtCantidad" 
+                                           class="form-control" value="1" min="1" max="50" required 
+                                           oninput="calcularTotal()">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Total a Pagar (S/.):</label>
+                                <input type="text" name="costoTotal" id="txtTotal" 
+                                       class="form-control bg-total text-end" 
+                                       value="0.00" readonly>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fa-solid fa-check-circle"></i> CONFIRMAR VENTA
+                                </button>
+                                <a th:href="@{/index}" class="btn btn-secondary">Cancelar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('.select2').select2({
+                theme: "classic",
+                width: '100%',
+                language: {
+                    noResults: function() { return "No se encontraron pacientes"; }
+                }
+            });
+
+            $('#formVenta').on('submit', function(e) {
+                e.preventDefault();
+                let total = parseFloat($('#txtTotal').val());
+                if(total <= 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Atención',
+                        text: 'Seleccione un tratamiento válido antes de continuar.'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: '¿Confirmar Venta?',
+                    text: "Se registrará la venta por S/. " + total.toFixed(2),
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#198754',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, registrar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.submit(); 
+                    }
+                });
+            });
+            
+            // Script del Navbar para mantener activo el menú
+            var url = window.location.href;
+            function activar(id) {
+                var elemento = document.getElementById(id);
+                if(elemento) elemento.classList.add("active");
+            }
+            if (url.includes("gestionpaciente")) activar("nav-pacientes");
+            else if (url.includes("gestiontratamiento")) activar("nav-tratamientos");
+            else if (url.includes("gestionatencion")) activar("nav-asistencia");
+            else if (url.includes("gestionconsulta")) activar("nav-citas");
+            else if (url.includes("gestionusuario")) activar("nav-usuarios");
+            else if (url.includes("gestionventa")) activar("nav-ventas");
+        });
+
+        function calcularTotal() {
+            let combo = document.getElementById("comboTratamiento");
+            // Obtener el precio desde el atributo data-precio generado por Thymeleaf
+            let precioUnitario = combo.options[combo.selectedIndex].getAttribute("data-precio");
+            let cantidad = document.getElementById("txtCantidad").value;
+
+            if(!precioUnitario) precioUnitario = 0;
+            if(!cantidad) cantidad = 0;
+
+            let total = parseFloat(precioUnitario) * parseInt(cantidad);
+            
+            if (!isNaN(total)) {
+                document.getElementById("txtTotal").value = total.toFixed(2);
+            } else {
+                document.getElementById("txtTotal").value = "0.00";
+            }
+        }
+    </script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+	<script th:inline="javascript">
+	    function confirmarSalida() {
+	        Swal.fire({
+	            title: '¿Deseas salir del sistema?',
+	            text: "Se cerrará tu sesión actual.",
+	            icon: 'question',
+	            showCancelButton: true,
+	            confirmButtonColor: '#d33',
+	            cancelButtonColor: '#6c757d',
+	            confirmButtonText: 'Sí, salir',
+	            cancelButtonText: 'Cancelar'
+	        }).then((result) => {
+	            if (result.isConfirmed) {
+	                // Redirige a la ruta de logout de Spring Boot
+	                window.location.href = /*[[@{/logout}]]*/ '/logout';
+	            }
+	        });
+	    }
+
+	    // Script para resaltar la opción activa en el menú (opcional)
+	    document.addEventListener("DOMContentLoaded", function() {
+	        var url = window.location.href;
+	        function activar(id) {
+	            var elemento = document.getElementById(id);
+	            if(elemento) elemento.classList.add("active");
+	        }
+	        if (url.includes("gestionpaciente")) activar("nav-pacientes");
+	        else if (url.includes("gestiontratamiento")) activar("nav-tratamientos");
+	        else if (url.includes("gestionatencion")) activar("nav-asistencia");
+	        else if (url.includes("gestioncita")) activar("nav-citas");
+	        else if (url.includes("gestionusuario")) activar("nav-usuarios");
+	        else if (url.includes("gestionventa")) activar("nav-ventas");
+	    });
+	</script>
+
+</body>
+</html>
